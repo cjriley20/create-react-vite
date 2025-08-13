@@ -367,40 +367,40 @@ async function main() {
   );
 
   const isTS = template === 'react-ts';
+
+  const eslintrcTypeScript = {
+    env: { browser: true, es2021: true, node: true },
+    parser: '@typescript-eslint/parser',
+    parserOptions: { project: false },
+    extends: [
+      'eslint:recommended',
+      'plugin:@typescript-eslint/recommended',
+      'plugin:react/recommended',
+      'plugin:react-hooks/recommended',
+      'plugin:prettier/recommended',
+    ],
+    plugins: ['@typescript-eslint', 'react', 'react-hooks', 'prettier'],
+    rules: { 'prettier/prettier': 'error', 'react/prop-types': 'off' },
+    settings: { react: { version: 'detect' } },
+  };
+
+  const eslintrcJavaScript = {
+    env: { browser: true, es2021: true, node: true },
+    extends: [
+      'eslint:recommended',
+      'plugin:react/recommended',
+      'plugin:react-hooks/recommended',
+      'plugin:prettier/recommended',
+    ],
+    plugins: ['react', 'react-hooks', 'prettier'],
+    rules: { 'prettier/prettier': 'error', 'react/prop-types': 'off' },
+    settings: { react: { version: 'detect' } },
+  };
+
   writeFile(
     path.join(appDir, '.eslintrc.json'),
-    JSON.stringify(
-      isTS
-        ? {
-            env: { browser: true, es2021: true, node: true },
-            parser: '@typescript-eslint/parser',
-            parserOptions: { project: false },
-            extends: [
-              'eslint:recommended',
-              'plugin:@typescript-eslint/recommended',
-              'plugin:react/recommended',
-              'plugin:react-hooks/recommended',
-              'plugin:prettier/recommended',
-            ],
-            plugins: ['@typescript-eslint', 'react', 'react-hooks', 'prettier'],
-            rules: { 'prettier/prettier': 'error', 'react/prop-types': 'off' },
-            settings: { react: { version: 'detect' } },
-          }
-        : {
-            env: { browser: true, es2021: true, node: true },
-            extends: [
-              'eslint:recommended',
-              'plugin:react/recommended',
-              'plugin:react-hooks/recommended',
-              'plugin:prettier/recommended',
-            ],
-            plugins: ['react', 'react-hooks', 'prettier'],
-            rules: { 'prettier/prettier': 'error', 'react/prop-types': 'off' },
-            settings: { react: { version: 'detect' } },
-          },
-      null,
-      2
-    ) + '\n'
+    JSON.stringify(isTS ? eslintrcTypeScript : eslintrcJavaScript, null, 2) +
+      '\n'
   );
 
   writeFile(
@@ -425,8 +425,8 @@ async function main() {
           'typescriptreact',
         ],
         'editor.codeActionsOnSave': {
-          'source.fixAll': true,
-          'source.fixAll.eslint': true,
+          'source.fixAll': 'explicit',
+          'source.fixAll.eslint': 'explicit',
         },
       },
       null,
@@ -498,7 +498,7 @@ A React + Vite starter with Prettier, ESLint, Husky, lint-staged, and VS Code se
   console.log('➡ Updating package.json…');
   upsertJSON(path.join(appDir, 'package.json'), (pkg) => {
     pkg.scripts ||= {};
-    pkg.scripts.prepare ||= 'husky install';
+    pkg.scripts.prepare ||= 'husky';
     pkg.scripts.lint ||= 'eslint .';
     pkg.scripts['lint:fix'] ||= 'eslint . --fix';
     pkg.scripts.format ||= 'prettier --write .';
