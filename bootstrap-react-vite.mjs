@@ -23,6 +23,11 @@ const CLI_OPTIONS = {
     description: 'Package manager: npm | yarn | pnpm',
     default: 'npm',
   },
+  framework: {
+    flags: ['--framework', '-f'],
+    description: 'Framework template: react | react-ts',
+    default: 'react',
+  },
   tailwind: {
     flags: ['--tailwind', '-t'],
     description: 'Include Tailwind CSS and prettier-plugin-tailwindcss',
@@ -39,12 +44,6 @@ const CLI_ARGS = [
   {
     name: '<app-name>',
     description: 'Name of the new project folder',
-    default: 'my-app',
-  },
-  {
-    name: 'template',
-    description: 'react | react-ts',
-    default: 'react',
   },
 ];
 
@@ -72,7 +71,7 @@ ${Object.values(CLI_OPTIONS)
 
 Examples:
   node bootstrap-react-vite.mjs my-app
-  node bootstrap-react-vite.mjs my-app react-ts --pm pnpm -t
+  node bootstrap-react-vite.mjs my-app -f react-ts --pm pnpm -t
 `);
 }
 
@@ -104,31 +103,44 @@ function parseArgs(argv) {
   }
 
   // positional
-  const appName = argv[0] || CLI_ARGS[0].default;
-  const template = argv[1] === 'react-ts' ? 'react-ts' : CLI_ARGS[1].default;
+  const appName = argv[0];
+  if (appName === undefined) {
+    console.log('Missing required app name');
+    printHelp();
+    process.exit(0);
+  }
 
   // options
   let pm = CLI_OPTIONS.pm.default;
   let tailwind = CLI_OPTIONS.tailwind.default;
+  let template = CLI_OPTIONS.framework.default;
 
-  for (let i = 2; i < argv.length; i++) {
+  for (let i = 1; i < argv.length; i++) {
     const a = argv[i];
 
     // --pm / --package-manager <name>
-    if ((a === '--pm' || a === '--package-manager') && argv[i + 1]) {
+    if (CLI_OPTIONS.pm.flags.includes(a) && argv[i + 1]) {
       pm = argv[i + 1];
       i++;
       continue;
     }
 
     // --tailwind / -t
-    if (a === '--tailwind' || a === '-t') {
+    if (CLI_OPTIONS.tailwind.flags.includes(a)) {
       tailwind = true;
+      continue;
+    }
+
+    // --framework / -f
+    if (CLI_OPTIONS.framework.flags.includes(a) && argv[i + 1]) {
+      template = argv[i + 1];
+      i++;
       continue;
     }
   }
 
   if (!['npm', 'yarn', 'pnpm'].includes(pm)) pm = CLI_OPTIONS.pm.default;
+
   return { appName, template, pm, tailwind };
 }
 
