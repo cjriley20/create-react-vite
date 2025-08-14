@@ -191,54 +191,38 @@ function ensureIndexCss(appDir) {
 }
 
 function enableTailwind({ appDir, pm, isTS }) {
+  // https://tailwindcss.com/docs/installation/using-vite
   console.log('➡ Enabling Tailwind CSS…');
 
-  // 1) Install deps
-  const tailwindDeps = [
-    'tailwindcss',
-    'postcss',
-    'autoprefixer',
-    'prettier-plugin-tailwindcss',
-  ];
-  const cmd = depCmd(pm, tailwindDeps, true);
+  // 1) Install Tailwind CSS and dependencies.
+  const tailwindPkgs = ['tailwindcss', '@tailwindcss/vite'];
+  let cmd = depCmd(pm, tailwindPkgs, false);
+  if (cmd) run(cmd);
+
+  const tailwindDeps = ['prettier-plugin-tailwindcss'];
+  cmd = depCmd(pm, tailwindDeps, true);
   if (cmd) run(cmd);
 
   // 2) Configs
-  writeFile(
-    path.join(appDir, 'tailwind.config.js'),
-    `/** @type {import('tailwindcss').Config} */
-export default {
-  content: ["./index.html","./src/**/*.{js,ts,jsx,tsx}"],
-  theme: { extend: {} },
-  plugins: []
-}
-`
+  const viteConfigPath = path.join(appDir, 'vite.config.js');
+  let config = fs.readFileSync(viteConfigPath, 'utf-8');
+
+  // Add the import if missing
+  if (!config.includes('@tailwindcss/vite')) {
+    config = `import tailwindcss from '@tailwindcss/vite';\n` + config;
+  }
+
+  // Update plugins line
+  config = config.replace(
+    /plugins:\s*\[\s*react\(\)\s*\]/,
+    'plugins: [react(), tailwindcss()]'
   );
 
-  writeFile(
-    path.join(appDir, 'postcss.config.js'),
-    `export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-}
-`
-  );
+  writeFile(viteConfigPath, config);
 
   // 3) CSS directives
   const indexCssPath = ensureIndexCss(appDir);
-  writeFile(
-    indexCssPath,
-    `@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Optional base tweaks */
-:root { color-scheme: light dark; }
-body { margin: 0; }
-`
-  );
+  writeFile(indexCssPath, `@import "tailwindcss";\n`);
 
   // 4) Add Prettier plugin
   const prettierPath = path.join(appDir, '.prettierrc.json');
@@ -250,10 +234,8 @@ body { margin: 0; }
 
   // 5) Starter App with Tailwind UI
   const appFile = path.join(appDir, 'src', isTS ? 'App.tsx' : 'App.jsx');
-  if (isTS) {
-    writeFile(
-      appFile,
-      `import { useState } from 'react';
+
+  const appTypeScript = `import { useState } from 'react';
 import './App.css';
 import './index.css';
 
@@ -279,12 +261,9 @@ export default function App() {
     </div>
   );
 }
-`
-    );
-  } else {
-    writeFile(
-      appFile,
-      `import { useState } from 'react';
+`;
+
+  const appJavaScript = `import { useState } from 'react';
 import './App.css';
 import './index.css';
 
@@ -310,8 +289,12 @@ export default function App() {
     </div>
   );
 }
-`
-    );
+`;
+
+  if (isTS) {
+    writeFile(appFile, appTypeScript);
+  } else {
+    writeFile(appFile, appJavaScript);
   }
 
   // 6) README note
