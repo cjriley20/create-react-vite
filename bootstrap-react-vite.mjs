@@ -194,7 +194,7 @@ function enableTailwind({ appDir, pm, isTS }) {
   // https://tailwindcss.com/docs/installation/using-vite
   console.log('➡ Enabling Tailwind CSS…');
 
-  // 1) Install Tailwind CSS and dependencies.
+  // Install Tailwind CSS and dependencies.
   const tailwindPkgs = ['tailwindcss', '@tailwindcss/vite'];
   let cmd = depCmd(pm, tailwindPkgs, false);
   if (cmd) run(cmd);
@@ -203,7 +203,7 @@ function enableTailwind({ appDir, pm, isTS }) {
   cmd = depCmd(pm, tailwindDeps, true);
   if (cmd) run(cmd);
 
-  // 2) Configs
+  // Update Vite config.
   const viteConfigPath = path.join(appDir, 'vite.config.js');
   let config = fs.readFileSync(viteConfigPath, 'utf-8');
 
@@ -220,11 +220,11 @@ function enableTailwind({ appDir, pm, isTS }) {
 
   writeFile(viteConfigPath, config);
 
-  // 3) CSS directives
+  // CSS directives
   const indexCssPath = ensureIndexCss(appDir);
   writeFile(indexCssPath, `@import "tailwindcss";\n`);
 
-  // 4) Add Prettier plugin
+  // Add Prettier plugin
   const prettierPath = path.join(appDir, '.prettierrc.json');
   upsertJSON(prettierPath, (cfg) => {
     const plugins = new Set([...(cfg.plugins || [])]);
@@ -232,7 +232,13 @@ function enableTailwind({ appDir, pm, isTS }) {
     return { ...cfg, plugins: [...plugins] };
   });
 
-  // 5) Starter App with Tailwind UI
+  // Add tailwind config to VS Code settings.
+  const vsCodePath = path.join(appDir, '.vscode', 'settings.json');
+  upsertJSON(vsCodePath, (cfg) => {
+    return { ...cfg, 'tailwindCSS.experimental.configFile': 'src/index.css' };
+  });
+
+  // Starter App with Tailwind UI
   const appFile = path.join(appDir, 'src', isTS ? 'App.tsx' : 'App.jsx');
 
   const appTypeScript = `import { useState } from 'react';
@@ -297,7 +303,7 @@ export default function App() {
     writeFile(appFile, appJavaScript);
   }
 
-  // 6) README note
+  // Update README
   fs.appendFileSync(
     path.join(appDir, 'README.md'),
     `\n## Tailwind CSS\n\n- Tailwind CSS and \`prettier-plugin-tailwindcss\` are enabled.\n- Utility classes are automatically sorted by Prettier.\n`
