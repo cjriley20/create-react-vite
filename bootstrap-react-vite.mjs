@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { getFileRegistry } from './templates.mjs';
+import { getFileRegistry } from './file-registry.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -312,41 +312,9 @@ async function main() {
 
   // Starter App (non-TW; Tailwind flow overwrites later)
   if (isTS) {
-    writeFile(
-      path.join(appDir, 'src', 'App.tsx'),
-      `import { useState } from 'react';
-import './App.css';
-
-export default function App() {
-  const [count, setCount] = useState<number>(0);
-  return (
-    <div className="App" style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
-      <h1>Hello, React + Vite 🚀</h1>
-      <p>Edit <code>src/App.tsx</code> and save to test HMR</p>
-      <button onClick={() => setCount((c) => c + 1)}>Count: {count}</button>
-    </div>
-  );
-}
-`
-    );
+    writeFileFromRegistry(appDir, fileRegistry, 'src/App.tsx');
   } else {
-    writeFile(
-      path.join(appDir, 'src', 'App.jsx'),
-      `import { useState } from 'react';
-import './App.css';
-
-export default function App() {
-  const [count, setCount] = useState(0);
-  return (
-    <div className="App" style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
-      <h1>Hello, React + Vite 🚀</h1>
-      <p>Edit <code>src/App.jsx</code> and save to test HMR</p>
-      <button onClick={() => setCount((c) => c + 1)}>Count: {count}</button>
-    </div>
-  );
-}
-`
-    );
+    writeFileFromRegistry(appDir, fileRegistry, 'src/App.jsx');
   }
 
   // README

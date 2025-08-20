@@ -103,15 +103,59 @@ const vsCodeSettings =
     2
   ) + '\n';
 
+// App
+
+const appTypeScript = `\
+import { useState } from 'react';
+import './App.css';
+
+export default function App() {
+  const [count, setCount] = useState<number>(0);
+  return (
+    <div className="App" style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
+      <h1>Hello, React + Vite 🚀</h1>
+      <p>Edit <code>src/App.tsx</code> and save to test HMR</p>
+      <button onClick={() => setCount((c) => c + 1)}>Count: {count}</button>
+    </div>
+  );
+}
+`;
+
+const appJavaScript = `\
+import { useState } from 'react';
+import './App.css';
+
+export default function App() {
+  const [count, setCount] = useState(0);
+  return (
+    <div className="App" style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
+      <h1>Hello, React + Vite 🚀</h1>
+      <p>Edit <code>src/App.jsx</code> and save to test HMR</p>
+      <button onClick={() => setCount((c) => c + 1)}>Count: {count}</button>
+    </div>
+  );
+}
+`;
+
 // Registry
 
-export function getFileRegistry({ isTypeScript }) {
+const tsTemplates = {
+  '.eslintrc.json': eslintrcTypeScript,
+  'src/App.tsx': appTypeScript,
+};
+
+const jsTemplates = {
+  '.eslintrc.json': eslintrcJavaScript,
+  'src/App.jsx': appJavaScript,
+};
+
+export function getFileRegistry({ useTypeScript }) {
   // Key should be the local file path relative to the app directory.
   return {
     '.prettierrc.json': prettierrcJson,
     '.prettierignore': prettierIgnore,
-    '.eslintrc.json': isTypeScript ? eslintrcTypeScript : eslintrcJavaScript,
     '.eslintignore': eslintIgnore,
     '.vscode/settings.json': vsCodeSettings,
+    ...(useTypeScript ? tsTemplates : jsTemplates),
   };
 }
