@@ -11,6 +11,7 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,61 +19,57 @@ const __dirname = path.dirname(__filename);
 /* ------------------------------ CLI metadata ------------------------------ */
 
 const CLI_OPTIONS = {
-  pm: {
-    flags: ['--pm <name>', '--package-manager <name>'],
+  'package-manager': {
+    type: 'string',
     description: 'Package manager: npm | yarn | pnpm',
+    short: 'p',
     default: 'npm',
   },
   framework: {
-    flags: ['--framework', '-f'],
+    type: 'string',
     description: 'Framework template: react | react-ts',
+    short: 'f',
     default: 'react',
   },
   tailwind: {
-    flags: ['--tailwind', '-t'],
+    type: 'boolean',
     description: 'Include Tailwind CSS and prettier-plugin-tailwindcss',
+    short: 't',
     default: false,
   },
   help: {
-    flags: ['--help', '-h'],
+    type: 'boolean',
     description: 'Show this help message',
+    short: 'h',
     default: false,
   },
 };
 
 const CLI_ARGS = [
   {
-    name: '<app-name>',
+    name: 'app-name',
     description: 'Name of the new project folder',
   },
 ];
 
 function printHelp() {
-  console.log(`
-Usage:
-  node bootstrap-react-vite.mjs ${CLI_ARGS.map((a) => a.name).join(
-    ' '
-  )} [options]
+  const argNames = CLI_ARGS.map((arg) => `<${arg.name}>`).join(' ');
 
-Arguments:
-${CLI_ARGS.map(
-  (a) => `  ${a.name.padEnd(12)} ${a.description} (default: ${a.default})`
-).join('\n')}
+  console.log(`\nUsage: bootstrap-react-vite.mjs ${argNames} [options]`);
 
-Options:
-${Object.values(CLI_OPTIONS)
-  .map(
-    (opt) =>
-      `  ${opt.flags.join(', ').padEnd(30)} ${opt.description}${
-        opt.default !== undefined ? ` (default: ${opt.default})` : ''
-      }`
-  )
-  .join('\n')}
+  console.log(`\nPositional arguments:`);
+  CLI_ARGS.map((arg) => {
+    console.log(`  ${arg.name.padEnd(16)} ${arg.description}`);
+  });
 
-Examples:
-  node bootstrap-react-vite.mjs my-app
-  node bootstrap-react-vite.mjs my-app -f react-ts --pm pnpm -t
-`);
+  console.log(`\nOptions:`);
+  for (const [name, config] of Object.entries(CLI_OPTIONS)) {
+    const longOpt = `--${name}`;
+    const shortOpt = config.short ? `-${config.short}, ` : '';
+    const opt = `${shortOpt}${longOpt}`;
+    const desc = config.description || '';
+    console.log(`  ${opt.padEnd(30)} ${desc} (default: ${config.default})`);
+  }
 }
 
 /* --------------------------------- Utils ---------------------------------- */
@@ -93,55 +90,6 @@ function upsertJSON(filepath, mutate) {
   const updated = mutate(data) || data;
   fs.writeFileSync(filepath, JSON.stringify(updated, null, 2) + '\n');
   console.log(`  🔧 updated ${path.relative(process.cwd(), filepath)}`);
-}
-
-function parseArgs(argv) {
-  // If user passed help anywhere, print and exit early
-  if (argv.some((a) => a === '-h' || a === '--help')) {
-    printHelp();
-    process.exit(0);
-  }
-
-  // positional
-  const appName = argv[0];
-  if (appName === undefined) {
-    console.log('Missing required app name');
-    printHelp();
-    process.exit(0);
-  }
-
-  // options
-  let pm = CLI_OPTIONS.pm.default;
-  let tailwind = CLI_OPTIONS.tailwind.default;
-  let template = CLI_OPTIONS.framework.default;
-
-  for (let i = 1; i < argv.length; i++) {
-    const a = argv[i];
-
-    // --pm / --package-manager <name>
-    if (CLI_OPTIONS.pm.flags.includes(a) && argv[i + 1]) {
-      pm = argv[i + 1];
-      i++;
-      continue;
-    }
-
-    // --tailwind / -t
-    if (CLI_OPTIONS.tailwind.flags.includes(a)) {
-      tailwind = true;
-      continue;
-    }
-
-    // --framework / -f
-    if (CLI_OPTIONS.framework.flags.includes(a) && argv[i + 1]) {
-      template = argv[i + 1];
-      i++;
-      continue;
-    }
-  }
-
-  if (!['npm', 'yarn', 'pnpm'].includes(pm)) pm = CLI_OPTIONS.pm.default;
-
-  return { appName, template, pm, tailwind };
 }
 
 function depCmd(pm, deps, dev = true) {
@@ -291,7 +239,7 @@ export default function App() {
         >
           Count: {count}
         </button>
-      </div>
+      </div>  // TODO Rename template -> framework and pm to packageManager.
     </div>
   );
 }
@@ -315,8 +263,21 @@ export default function App() {
 /* --------------------------------- Main ----------------------------------- */
 
 async function main() {
-  const argv = process.argv.slice(2);
-  const { appName, template, pm, tailwind } = parseArgs(argv);
+  // Get command-line arguments.
+  const { values, positionals } = parseArgs({
+    options: CLI_OPTIONS,
+    allowPositionals: true,
+  });
+
+  if (values.help || positionals.length === 0) {
+    printHelp();
+    process.exit(0);
+  }
+
+  const appName = positionals[0];
+  const template = values.framework;
+  const pm = values['package-manager'];
+  const tailwind = values.tailwind;
 
   console.log(`➡ Creating Vite app: ${appName} (template: ${template})`);
   run(`npm create vite@latest ${appName} -- --template ${template}`);
