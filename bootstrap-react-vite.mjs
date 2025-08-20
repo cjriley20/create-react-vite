@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { getFileRegistry } from './templates.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -75,6 +76,10 @@ function printHelp() {
 
 function run(cmd, opts = {}) {
   execSync(cmd, { stdio: 'inherit', shell: true, ...opts });
+}
+
+function writeFileFromRegistry(appDir, fileRegistry, name) {
+  writeFile(path.join(appDir, name), fileRegistry[name]);
 }
 
 function writeFile(filepath, content) {
@@ -278,6 +283,9 @@ async function main() {
   const pm = values['package-manager'];
   const tailwind = values.tailwind;
 
+  // Get contents of local files to write.
+  const fileRegistry = getFileRegistry();
+
   console.log(`➡ Creating Vite app: ${appName} (template: ${template})`);
   run(`npm create vite@latest ${appName} -- --template ${template}`);
 
@@ -294,38 +302,8 @@ async function main() {
   // Base configs
   console.log('➡ Writing base config files…');
 
-  writeFile(
-    path.join(appDir, '.prettierrc.json'),
-    JSON.stringify(
-      {
-        semi: true,
-        singleQuote: true,
-        trailingComma: 'es5',
-        printWidth: 80,
-        tabWidth: 2,
-        bracketSpacing: true,
-        arrowParens: 'always',
-      },
-      null,
-      2
-    ) + '\n'
-  );
-
-  writeFile(
-    path.join(appDir, '.prettierignore'),
-    [
-      'node_modules',
-      'dist',
-      'build',
-      'coverage',
-      '.next',
-      'out',
-      'package-lock.json',
-      'yarn.lock',
-      'pnpm-lock.yaml',
-      '',
-    ].join('\n')
-  );
+  writeFileFromRegistry(appDir, fileRegistry, '.prettierrc.json');
+  writeFileFromRegistry(appDir, fileRegistry, '.prettierignore');
 
   const isTS = template === 'react-ts';
 
