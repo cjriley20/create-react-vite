@@ -25,16 +25,15 @@ const CLI_OPTIONS = {
     short: 'p',
     default: 'npm',
   },
-  framework: {
+  template: {
     type: 'string',
-    description: 'Framework template: react | react-ts',
-    short: 'f',
+    description: 'Vite template: react | react-ts',
+    short: 't',
     default: 'react',
   },
   tailwind: {
     type: 'boolean',
     description: 'Include Tailwind CSS and prettier-plugin-tailwindcss',
-    short: 't',
     default: false,
   },
   help: {
@@ -275,7 +274,7 @@ async function main() {
   }
 
   const appName = positionals[0];
-  const template = values.framework;
+  const template = values.template;
   const pm = values['package-manager'];
   const tailwind = values.tailwind;
 
