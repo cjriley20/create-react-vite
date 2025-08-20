@@ -139,6 +139,64 @@ export default function App() {
 }
 `;
 
+const appTailwindTypeScript = `\
+import { useState } from 'react';
+import './App.css';
+import './index.css';
+
+export default function App() {
+  const [count, setCount] = useState<number>(0);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-900">
+      <div className="rounded-2xl shadow p-8 bg-white dark:bg-zinc-800">
+        <h1 className="text-2xl font-bold tracking-tight mb-2 text-zinc-900 dark:text-zinc-50">
+          Hello, React + Vite + Tailwind 🚀
+        </h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+        <button
+          onClick={() => setCount((c) => c + 1)}
+          className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700"
+        >
+          Count: {count}
+        </button>
+      </div>
+    </div>
+  );
+}
+`;
+
+const appTailwindJavaScript = `\
+import { useState } from 'react';
+import './App.css';
+import './index.css';
+
+export default function App() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-900">
+      <div className="rounded-2xl shadow p-8 bg-white dark:bg-zinc-800">
+        <h1 className="text-2xl font-bold tracking-tight mb-2 text-zinc-900 dark:text-zinc-50">
+          Hello, React + Vite + Tailwind 🚀
+        </h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
+          Edit <code>src/App.jsx</code> and save to test HMR
+        </p>
+        <button
+          onClick={() => setCount((c) => c + 1)}
+          className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700"
+        >
+          Count: {count}
+        </button>
+      </div>
+    </div>
+  );
+}
+`;
+
 // README
 const readme = ({ appName, packageManager }) => `\
 # ${appName}
@@ -160,17 +218,22 @@ A React + Vite starter with Prettier, ESLint, Husky, lint-staged, and VS Code se
 
 // Registry
 
-const tsTemplates = {
+const tsTemplates = (withTailwind) => ({
   '.eslintrc.json': eslintrcTypeScript,
-  'src/App.tsx': appTypeScript,
-};
+  'src/App.tsx': withTailwind ? appTailwindTypeScript : appTypeScript,
+});
 
-const jsTemplates = {
+const jsTemplates = (withTailwind) => ({
   '.eslintrc.json': eslintrcJavaScript,
-  'src/App.jsx': appJavaScript,
-};
+  'src/App.jsx': withTailwind ? appTailwindJavaScript : appJavaScript,
+});
 
-export function getFileRegistry({ appName, packageManager, useTypeScript }) {
+export function getFileRegistry({
+  appName,
+  packageManager,
+  useTypeScript,
+  withTailwind,
+}) {
   // Key should be the local file path relative to the app directory.
   return {
     '.prettierrc.json': prettierrcJson,
@@ -178,6 +241,6 @@ export function getFileRegistry({ appName, packageManager, useTypeScript }) {
     '.eslintignore': eslintIgnore,
     '.vscode/settings.json': vsCodeSettings,
     'README.md': readme({ appName, packageManager }),
-    ...(useTypeScript ? tsTemplates : jsTemplates),
+    ...(useTypeScript ? tsTemplates(withTailwind) : jsTemplates(withTailwind)),
   };
 }

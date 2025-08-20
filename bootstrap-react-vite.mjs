@@ -80,8 +80,10 @@ function run(cmd, opts = {}) {
   execSync(cmd, { stdio: 'inherit', shell: true, ...opts });
 }
 
-function writeFileFromRegistry(appDir, fileRegistry, name) {
-  writeFile(path.join(appDir, name), fileRegistry[name]);
+function writeAllFilesFromRegistry(appDir, fileRegistry) {
+  for (const [relPath, content] of Object.entries(fileRegistry)) {
+    writeFile(path.join(appDir, relPath), content);
+  }
 }
 
 function writeFile(filepath, content) {
@@ -131,7 +133,7 @@ function ensureIndexCss(appDir) {
   return p;
 }
 
-function enableTailwind({ appDir, pm, isTS }) {
+function enableTailwind({ appDir, pm, useTypeScript }) {
   // https://tailwindcss.com/docs/installation/using-vite
   console.log('➡ Enabling Tailwind CSS…');
 
@@ -179,71 +181,6 @@ function enableTailwind({ appDir, pm, isTS }) {
     return { ...cfg, 'tailwindCSS.experimental.configFile': 'src/index.css' };
   });
 
-  // Starter App with Tailwind UI
-  const appFile = path.join(appDir, 'src', isTS ? 'App.tsx' : 'App.jsx');
-
-  const appTypeScript = `import { useState } from 'react';
-import './App.css';
-import './index.css';
-
-export default function App() {
-  const [count, setCount] = useState<number>(0);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-900">
-      <div className="rounded-2xl shadow p-8 bg-white dark:bg-zinc-800">
-        <h1 className="text-2xl font-bold tracking-tight mb-2 text-zinc-900 dark:text-zinc-50">
-          Hello, React + Vite + Tailwind 🚀
-        </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-        <button
-          onClick={() => setCount((c) => c + 1)}
-          className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700"
-        >
-          Count: {count}
-        </button>
-      </div>
-    </div>
-  );
-}
-`;
-
-  const appJavaScript = `import { useState } from 'react';
-import './App.css';
-import './index.css';
-
-export default function App() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-900">
-      <div className="rounded-2xl shadow p-8 bg-white dark:bg-zinc-800">
-        <h1 className="text-2xl font-bold tracking-tight mb-2 text-zinc-900 dark:text-zinc-50">
-          Hello, React + Vite + Tailwind 🚀
-        </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-        <button
-          onClick={() => setCount((c) => c + 1)}
-          className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700"
-        >
-          Count: {count}
-        </button>
-      </div>  // TODO Rename template -> framework and pm to packageManager.
-    </div>
-  );
-}
-`;
-
-  if (isTS) {
-    writeFile(appFile, appTypeScript);
-  } else {
-    writeFile(appFile, appJavaScript);
-  }
-
   // Update README
   fs.appendFileSync(
     path.join(appDir, 'README.md'),
@@ -270,7 +207,7 @@ async function main() {
   const appName = positionals[0];
   const template = values.template;
   const pm = values['package-manager'];
-  const tailwind = values.tailwind;
+  const withTailwind = values.tailwind;
 
   const useTypeScript = template === 'react-ts';
 
@@ -292,26 +229,12 @@ async function main() {
     appName,
     packageManager: chosenPM,
     useTypeScript,
+    withTailwind,
   });
 
   // Base configs
   console.log('➡ Writing base config files…');
-
-  writeFileFromRegistry(appDir, fileRegistry, '.prettierrc.json');
-  writeFileFromRegistry(appDir, fileRegistry, '.prettierignore');
-  writeFileFromRegistry(appDir, fileRegistry, '.eslintrc.json');
-  writeFileFromRegistry(appDir, fileRegistry, '.eslintignore');
-  writeFileFromRegistry(appDir, fileRegistry, '.vscode/settings.json');
-
-  // Starter App (non-TW; Tailwind flow overwrites later)
-  if (useTypeScript) {
-    writeFileFromRegistry(appDir, fileRegistry, 'src/App.tsx');
-  } else {
-    writeFileFromRegistry(appDir, fileRegistry, 'src/App.jsx');
-  }
-
-  // README
-  writeFileFromRegistry(appDir, fileRegistry, 'README.md');
+  writeAllFilesFromRegistry(appDir, fileRegistry);
 
   // Ensure package.json scripts + lint-staged
   console.log('➡ Updating package.json…');
@@ -352,7 +275,7 @@ async function main() {
   if (installBase) run(installBase);
 
   // Optional Tailwind
-  if (tailwind) enableTailwind({ appDir, pm: chosenPM, isTS: useTypeScript });
+  if (withTailwind) enableTailwind({ appDir, pm: chosenPM, useTypeScript });
 
   // Final install
   console.log('➡ Ensuring dependencies are installed…');
