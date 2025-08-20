@@ -283,8 +283,10 @@ async function main() {
   const pm = values['package-manager'];
   const tailwind = values.tailwind;
 
+  const isTS = template === 'react-ts';
+
   // Get contents of local files to write.
-  const fileRegistry = getFileRegistry();
+  const fileRegistry = getFileRegistry({ isTS });
 
   console.log(`➡ Creating Vite app: ${appName} (template: ${template})`);
   run(`npm create vite@latest ${appName} -- --template ${template}`);
@@ -304,74 +306,9 @@ async function main() {
 
   writeFileFromRegistry(appDir, fileRegistry, '.prettierrc.json');
   writeFileFromRegistry(appDir, fileRegistry, '.prettierignore');
-
-  const isTS = template === 'react-ts';
-
-  const eslintrcTypeScript = {
-    env: { browser: true, es2021: true, node: true },
-    parser: '@typescript-eslint/parser',
-    parserOptions: { project: false },
-    extends: [
-      'eslint:recommended',
-      'plugin:@typescript-eslint/recommended',
-      'plugin:react/recommended',
-      'plugin:react-hooks/recommended',
-      'plugin:prettier/recommended',
-    ],
-    plugins: ['@typescript-eslint', 'react', 'react-hooks', 'prettier'],
-    rules: { 'prettier/prettier': 'error', 'react/prop-types': 'off' },
-    settings: { react: { version: 'detect' } },
-  };
-
-  const eslintrcJavaScript = {
-    env: { browser: true, es2021: true, node: true },
-    extends: [
-      'eslint:recommended',
-      'plugin:react/recommended',
-      'plugin:react-hooks/recommended',
-      'plugin:prettier/recommended',
-    ],
-    plugins: ['react', 'react-hooks', 'prettier'],
-    rules: { 'prettier/prettier': 'error', 'react/prop-types': 'off' },
-    settings: { react: { version: 'detect' } },
-  };
-
-  writeFile(
-    path.join(appDir, '.eslintrc.json'),
-    JSON.stringify(isTS ? eslintrcTypeScript : eslintrcJavaScript, null, 2) +
-      '\n'
-  );
-
-  writeFile(
-    path.join(appDir, '.eslintignore'),
-    ['dist', 'node_modules', 'vite.config.*.ts', 'vite.config.*.js', ''].join(
-      '\n'
-    )
-  );
-
-  writeFile(
-    path.join(appDir, '.vscode', 'settings.json'),
-    JSON.stringify(
-      {
-        'editor.defaultFormatter': 'esbenp.prettier-vscode',
-        'editor.formatOnSave': true,
-        'editor.formatOnSaveMode': 'modifications',
-        'prettier.prettierPath': './node_modules/prettier',
-        'eslint.validate': [
-          'javascript',
-          'javascriptreact',
-          'typescript',
-          'typescriptreact',
-        ],
-        'editor.codeActionsOnSave': {
-          'source.fixAll': 'explicit',
-          'source.fixAll.eslint': 'explicit',
-        },
-      },
-      null,
-      2
-    ) + '\n'
-  );
+  writeFileFromRegistry(appDir, fileRegistry, '.eslintrc.json');
+  writeFileFromRegistry(appDir, fileRegistry, '.eslintignore');
+  writeFileFromRegistry(appDir, fileRegistry, '.vscode/settings.json');
 
   // Starter App (non-TW; Tailwind flow overwrites later)
   if (isTS) {
