@@ -12,7 +12,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+
 import { getFileRegistry } from './file-registry.mjs';
+import { runScriptCmd } from './utils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -120,19 +122,6 @@ function installCmd(pm) {
       return 'pnpm install';
     default:
       return 'npm install';
-  }
-}
-
-function runScriptCmd(pm, script) {
-  switch (pm) {
-    case 'npm':
-      return `npm run ${script}`;
-    case 'yarn':
-      return `yarn ${script}`;
-    case 'pnpm':
-      return `pnpm ${script}`;
-    default:
-      return `npm run ${script}`;
   }
 }
 
@@ -283,10 +272,7 @@ async function main() {
   const pm = values['package-manager'];
   const tailwind = values.tailwind;
 
-  const isTS = template === 'react-ts';
-
-  // Get contents of local files to write.
-  const fileRegistry = getFileRegistry({ isTS });
+  const useTypeScript = template === 'react-ts';
 
   console.log(`➡ Creating Vite app: ${appName} (template: ${template})`);
   run(`npm create vite@latest ${appName} -- --template ${template}`);
@@ -301,6 +287,13 @@ async function main() {
   else if (fs.existsSync('yarn.lock')) chosenPM = 'yarn';
   console.log(`➡ Package manager: ${chosenPM}`);
 
+  // Get contents of local files to write.
+  const fileRegistry = getFileRegistry({
+    appName,
+    packageManager: chosenPM,
+    useTypeScript,
+  });
+
   // Base configs
   console.log('➡ Writing base config files…');
 
@@ -311,32 +304,14 @@ async function main() {
   writeFileFromRegistry(appDir, fileRegistry, '.vscode/settings.json');
 
   // Starter App (non-TW; Tailwind flow overwrites later)
-  if (isTS) {
+  if (useTypeScript) {
     writeFileFromRegistry(appDir, fileRegistry, 'src/App.tsx');
   } else {
     writeFileFromRegistry(appDir, fileRegistry, 'src/App.jsx');
   }
 
   // README
-  writeFile(
-    path.join(appDir, 'README.md'),
-    `# ${appName}
-
-[![Code Style: Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io)
-[![Linting: ESLint](https://img.shields.io/badge/linting-eslint-blue.svg)](https://eslint.org)
-
-A React + Vite starter with Prettier, ESLint, Husky, lint-staged, and VS Code settings pre-configured.
-
-## Scripts
-
-- \`${runScriptCmd(chosenPM, 'dev')}\` — Start development server
-- \`${runScriptCmd(chosenPM, 'build')}\` — Build for production
-- \`${runScriptCmd(chosenPM, 'preview')}\` — Preview production build
-- \`${runScriptCmd(chosenPM, 'lint')}\` — Run ESLint
-- \`${runScriptCmd(chosenPM, 'lint:fix')}\` — Fix ESLint issues
-- \`${runScriptCmd(chosenPM, 'format')}\` — Format code with Prettier
-`
-  );
+  writeFileFromRegistry(appDir, fileRegistry, 'README.md');
 
   // Ensure package.json scripts + lint-staged
   console.log('➡ Updating package.json…');
@@ -372,12 +347,12 @@ A React + Vite starter with Prettier, ESLint, Husky, lint-staged, and VS Code se
     '@typescript-eslint/parser',
     '@typescript-eslint/eslint-plugin',
   ];
-  const allDev = isTS ? baseDeps.concat(tsDeps) : baseDeps;
+  const allDev = useTypeScript ? baseDeps.concat(tsDeps) : baseDeps;
   const installBase = depCmd(chosenPM, allDev, true);
   if (installBase) run(installBase);
 
   // Optional Tailwind
-  if (tailwind) enableTailwind({ appDir, pm: chosenPM, isTS });
+  if (tailwind) enableTailwind({ appDir, pm: chosenPM, isTS: useTypeScript });
 
   // Final install
   console.log('➡ Ensuring dependencies are installed…');

@@ -1,3 +1,5 @@
+import { runScriptCmd } from './utils.mjs';
+
 // Base config files
 
 // Prettier
@@ -137,6 +139,25 @@ export default function App() {
 }
 `;
 
+// README
+const readme = ({ appName, packageManager }) => `\
+# ${appName}
+
+[![Code Style: Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io)
+[![Linting: ESLint](https://img.shields.io/badge/linting-eslint-blue.svg)](https://eslint.org)
+
+A React + Vite starter with Prettier, ESLint, Husky, lint-staged, and VS Code settings pre-configured.
+
+## Scripts
+
+- \`${runScriptCmd(packageManager, 'dev')}\` — Start development server
+- \`${runScriptCmd(packageManager, 'build')}\` — Build for production
+- \`${runScriptCmd(packageManager, 'preview')}\` — Preview production build
+- \`${runScriptCmd(packageManager, 'lint')}\` — Run ESLint
+- \`${runScriptCmd(packageManager, 'lint:fix')}\` — Fix ESLint issues
+- \`${runScriptCmd(packageManager, 'format')}\` — Format code with Prettier
+`;
+
 // Registry
 
 const tsTemplates = {
@@ -149,13 +170,14 @@ const jsTemplates = {
   'src/App.jsx': appJavaScript,
 };
 
-export function getFileRegistry({ useTypeScript }) {
+export function getFileRegistry({ appName, packageManager, useTypeScript }) {
   // Key should be the local file path relative to the app directory.
   return {
     '.prettierrc.json': prettierrcJson,
     '.prettierignore': prettierIgnore,
     '.eslintignore': eslintIgnore,
     '.vscode/settings.json': vsCodeSettings,
+    'README.md': readme({ appName, packageManager }),
     ...(useTypeScript ? tsTemplates : jsTemplates),
   };
 }
